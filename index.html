@@ -103,6 +103,54 @@
     }
     #btn-fullscreen:hover { color: #fff; background: #252525; }
 
+    #btn-help {
+      background: none;
+      border: none;
+      border-right: 1px solid #333;
+      color: #666;
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0 10px;
+      flex-shrink: 0;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      letter-spacing: 0.03em;
+    }
+    #btn-help:hover { color: #bbb; background: #252525; }
+
+    /* ── ヘルプモーダル ── */
+    #help-modal {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 22px 24px;
+      width: 420px;
+      max-width: 94vw;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    #help-modal h2 { font-size: 13px; color: #bbb; margin-bottom: 14px; }
+    #help-modal table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    #help-modal tr { border-bottom: 1px solid #2a2a2a; }
+    #help-modal td { padding: 7px 4px; vertical-align: top; color: #ccc; }
+    #help-modal td:first-child { color: #888; white-space: nowrap; padding-right: 14px; }
+    #help-modal .section { font-size: 10px; color: #555; padding: 10px 0 3px; letter-spacing: 0.05em; }
+    #help-close {
+      margin-top: 16px;
+      display: block;
+      margin-left: auto;
+      background: #333;
+      border: none;
+      color: #bbb;
+      border-radius: 4px;
+      padding: 6px 18px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    #help-close:hover { background: #444; color: #fff; }
+
     /* ── グリッド ── */
     #grid-wrap { flex: 1; min-height: 0; overflow: hidden; }
 
@@ -296,7 +344,30 @@
 
 <div id="tabbar">
   <button id="btn-fullscreen" title="全画面">⛶</button>
+  <button id="btn-help">説明</button>
   <button id="btn-add-tab" title="タブを追加">＋</button>
+</div>
+
+<div id="help-overlay" class="overlay">
+  <div id="help-modal">
+    <h2>操作方法</h2>
+    <table>
+      <tr><td class="section" colspan="2">── 画面操作 ──</td></tr>
+      <tr><td>⛶ 全画面</td><td>タブバー左端のボタンで全画面表示／解除</td></tr>
+      <tr><td class="section" colspan="2">── タブ ──</td></tr>
+      <tr><td>タブ追加</td><td>「＋」ボタンで新しい9画面タブを追加</td></tr>
+      <tr><td>タブ削除</td><td>タブの「×」ボタンで削除（最後の1つは削除不可）</td></tr>
+      <tr><td>タブ名変更</td><td>タブをダブルクリックして編集、Enter で確定</td></tr>
+      <tr><td class="section" colspan="2">── 各マスの設定 ──</td></tr>
+      <tr><td>マス変更</td><td>マスにカーソルを乗せると「✎ 変更」ボタンが表示される</td></tr>
+      <tr><td>URLを指定</td><td>YouTube の動画URLを直接入力して再生</td></tr>
+      <tr><td>自動再生</td><td>「チャンネルの最新動画を自動再生」タブでチャンネルIDを入力し、「自動再生にセット」を押すと、ページを開くたびにそのチャンネルの最新動画を自動取得して再生</td></tr>
+      <tr><td>チャンネルID</td><td>YouTubeチャンネルページのソースで <code>channelId</code> を検索すると確認できる（UC から始まる文字列）</td></tr>
+      <tr><td class="section" colspan="2">── 保存 ──</td></tr>
+      <tr><td>自動保存</td><td>タブ構成・各マスの設定はブラウザに自動保存される</td></tr>
+    </table>
+    <button id="help-close">閉じる</button>
+  </div>
 </div>
 
 <div id="grid-wrap"></div>
@@ -645,6 +716,12 @@
     btnFs.textContent = document.fullscreenElement ? '✕' : '⛶';
     btnFs.title = document.fullscreenElement ? '全画面を解除' : '全画面';
   });
+
+  /* ── ヘルプ ── */
+  const helpOverlay = document.getElementById('help-overlay');
+  document.getElementById('btn-help').addEventListener('click', () => helpOverlay.classList.add('open'));
+  document.getElementById('help-close').addEventListener('click', () => helpOverlay.classList.remove('open'));
+  helpOverlay.addEventListener('click', (e) => { if (e.target === helpOverlay) helpOverlay.classList.remove('open'); });
 
   renderTabs();
   renderGrid();
