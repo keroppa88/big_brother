@@ -344,7 +344,7 @@
   ];
   const STORAGE_KEY = 'livegrid_v2';
   const CH_KEY      = 'livegrid_channel';
-  const PROXY       = 'https://api.allorigins.win/raw?url=';
+  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
 
   function defaultData() {
     return { tabs: [{ id: 1, name: 'タブ 1', videos: [...DEFAULT_VIDEOS] }], active: 0, next: 2 };
@@ -367,30 +367,24 @@
   function isChannel(v) { return typeof v === 'string' && v.startsWith('ch:'); }
   function chId(v) { return v.slice(3); }
 
-  /* RSS からチャンネルの最新動画IDを取得 */
-  async function fetchLatestId(channelId) {
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const res = await fetch(PROXY + encodeURIComponent(url));
+  /* rss2json 経由でチャンネルの動画リストを取得 */
+  async function fetchVideoList(channelId) {
+    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const res = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const xml  = new DOMParser().parseFromString(text, 'application/xml');
-    const first = xml.querySelector('entry videoId');
-    if (!first) throw new Error('動画が見つかりません');
-    return first.textContent;
+    const json = await res.json();
+    if (json.status !== 'ok') throw new Error(json.message || '取得失敗');
+    return json.items.map(item => {
+      const m = item.link.match(/[?&]v=([\w-]{11})/);
+      return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
+    }).filter(v => v.id);
   }
 
-  /* RSS から動画リストを取得 */
-  async function fetchVideoList(channelId) {
-    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const res = await fetch(PROXY + encodeURIComponent(url));
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const text = await res.text();
-    const xml  = new DOMParser().parseFromString(text, 'application/xml');
-    return Array.from(xml.querySelectorAll('entry')).map(e => ({
-      id   : e.querySelector('videoId')?.textContent || '',
-      title: e.querySelector('title')?.textContent   || '',
-      pub  : e.querySelector('published')?.textContent || '',
-    })).filter(v => v.id);
+  /* 最新動画ID1件だけ取得 */
+  async function fetchLatestId(channelId) {
+    const list = await fetchVideoList(channelId);
+    if (!list.length) throw new Error('動画が見つかりません');
+    return list[0].id;
   }
 
   /* ── タブバー ── */
