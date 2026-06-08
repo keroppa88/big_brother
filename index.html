@@ -104,11 +104,7 @@
     #btn-fullscreen:hover { color: #fff; background: #252525; }
 
     /* ── グリッド ── */
-    #grid-wrap {
-      flex: 1;
-      min-height: 0;
-      overflow: hidden;
-    }
+    #grid-wrap { flex: 1; min-height: 0; overflow: hidden; }
 
     .grid {
       display: grid;
@@ -126,15 +122,34 @@
       background: #111;
       border-radius: 3px;
       overflow: hidden;
-      height: calc((100vh - 32px - 5px * 2 - 5px * 2) / 3);
+      height: calc((100vh - 32px - 20px) / 3);
       aspect-ratio: 16 / 9;
     }
 
-    .cell iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+    .cell iframe { width: 100%; height: 100%; border: none; display: block; }
+
+    /* チャンネルモード表示 */
+    .cell-label {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.6);
+      color: #0af;
+      font-size: 10px;
+      padding: 2px 5px;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .cell-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #666;
     }
 
     .edit-btn {
@@ -154,7 +169,7 @@
     }
     .cell:hover .edit-btn { opacity: 1; }
 
-    /* ── モーダル共通 ── */
+    /* ── モーダル ── */
     .overlay {
       display: none;
       position: fixed;
@@ -166,7 +181,6 @@
     }
     .overlay.open { display: flex; }
 
-    /* ── URL 変更モーダル ── */
     #modal {
       background: #1e1e1e;
       border: 1px solid #444;
@@ -176,13 +190,32 @@
       max-width: 94vw;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 14px;
     }
     #modal h2 { font-size: 13px; color: #bbb; }
 
-    #modal .url-row { display: flex; gap: 8px; }
-    #modal .url-row input {
+    /* モード切替タブ */
+    .mode-tabs {
+      display: flex;
+      gap: 0;
+      border: 1px solid #444;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .mode-tab {
       flex: 1;
+      background: #111;
+      border: none;
+      color: #777;
+      font-size: 12px;
+      padding: 6px;
+      cursor: pointer;
+    }
+    .mode-tab.active { background: #333; color: #fff; }
+
+    /* URLモード */
+    #pane-url input {
+      width: 100%;
       background: #111;
       border: 1px solid #555;
       color: #fff;
@@ -191,54 +224,42 @@
       font-size: 13px;
       outline: none;
     }
-    #modal .url-row input:focus { border-color: #999; }
+    #pane-url input:focus { border-color: #999; }
 
-    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
-    .modal-actions button {
-      padding: 6px 16px;
-      border-radius: 4px;
-      border: none;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    #btn-cancel { background: #333; color: #bbb; }
-    #btn-apply  { background: #c00; color: #fff; }
-    #btn-apply:hover { background: #e00; }
-
-    /* ── チャンネル最新動画 ── */
-    #channel-section { border-top: 1px solid #333; padding-top: 12px; }
-    #channel-section h3 { font-size: 11px; color: #888; margin-bottom: 8px; }
-
-    #channel-controls { display: flex; gap: 6px; margin-bottom: 8px; }
+    /* チャンネルモード */
+    #pane-ch { display: flex; flex-direction: column; gap: 8px; }
+    #pane-ch .ch-row { display: flex; gap: 6px; }
     #ch-id-input {
       flex: 1;
       background: #111;
       border: 1px solid #444;
       color: #fff;
       border-radius: 4px;
-      padding: 5px 8px;
-      font-size: 11px;
+      padding: 6px 10px;
+      font-size: 12px;
       outline: none;
     }
     #ch-id-input:focus { border-color: #777; }
-    #btn-fetch {
+    #btn-fetch, #btn-set-ch {
       background: #333;
       border: 1px solid #555;
       color: #ccc;
       border-radius: 4px;
-      padding: 5px 10px;
+      padding: 6px 10px;
       font-size: 11px;
       cursor: pointer;
       white-space: nowrap;
     }
-    #btn-fetch:hover { background: #444; color: #fff; }
+    #btn-fetch:hover, #btn-set-ch:hover { background: #444; color: #fff; }
+    #btn-set-ch { background: #800; border-color: #a00; color: #fcc; }
+    #btn-set-ch:hover { background: #a00; }
 
     #video-list {
       max-height: 180px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
     #video-list::-webkit-scrollbar { width: 4px; }
     #video-list::-webkit-scrollbar-thumb { background: #444; }
@@ -247,32 +268,28 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 5px 6px;
+      padding: 4px 6px;
       border-radius: 4px;
       cursor: pointer;
       background: #161616;
     }
-    .video-item:hover { background: #282828; }
+    .video-item:hover { background: #2a2a2a; }
+    .video-item.selected { background: #1a3a1a; outline: 1px solid #4a4; }
 
-    .video-item img {
-      width: 80px;
-      height: 45px;
-      object-fit: cover;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
-
+    .video-item img { width: 80px; height: 45px; object-fit: cover; border-radius: 2px; flex-shrink: 0; }
     .video-item-info { flex: 1; min-width: 0; }
-    .video-item-title {
-      font-size: 11px;
-      color: #ddd;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .video-item-date { font-size: 10px; color: #666; margin-top: 2px; }
+    .video-item-title { font-size: 11px; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .video-item-date  { font-size: 10px; color: #666; margin-top: 2px; }
 
-    #fetch-status { font-size: 11px; color: #888; text-align: center; padding: 8px 0; }
+    #fetch-status { font-size: 11px; color: #888; text-align: center; padding: 6px 0; }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .modal-actions button {
+      padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px;
+    }
+    #btn-cancel { background: #333; color: #bbb; }
+    #btn-apply  { background: #c00; color: #fff; }
+    #btn-apply:hover { background: #e00; }
   </style>
 </head>
 <body>
@@ -286,30 +303,40 @@
 
 <div id="modal-overlay" class="overlay">
   <div id="modal">
-    <h2>YouTube URL を変更</h2>
-    <div class="url-row">
-      <input id="url-input" type="text" placeholder="https://www.youtube.com/watch?v=...">
-    </div>
-    <div class="modal-actions">
-      <button id="btn-cancel">キャンセル</button>
-      <button id="btn-apply">適用</button>
+    <h2>マスの設定</h2>
+
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="url">動画URLを指定</button>
+      <button class="mode-tab" data-mode="ch">チャンネルの最新動画を自動再生</button>
     </div>
 
-    <div id="channel-section">
-      <h3>チャンネルの最新動画から選ぶ</h3>
-      <div id="channel-controls">
+    <!-- URL モード -->
+    <div id="pane-url">
+      <input id="url-input" type="text" placeholder="https://www.youtube.com/watch?v=...">
+    </div>
+
+    <!-- チャンネルモード -->
+    <div id="pane-ch" style="display:none">
+      <div class="ch-row">
         <input id="ch-id-input" type="text" placeholder="チャンネルID（UCxxxxxxxxx）">
-        <button id="btn-fetch">取得</button>
+        <button id="btn-fetch">動画一覧を取得</button>
       </div>
       <div id="video-list">
         <div id="fetch-status">チャンネルIDを入力して「取得」を押してください</div>
       </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <button id="btn-set-ch">このチャンネルの最新動画を自動再生にセット</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button id="btn-cancel">キャンセル</button>
+      <button id="btn-apply">適用</button>
     </div>
   </div>
 </div>
 
 <script>
-  /* ── 定数 ── */
   const DEFAULT_VIDEOS = [
     '8H3nRCFVR6Y','gFRtAAmiFbE','68DhvzKCVOc',
     'lA6TaaMGgDo','YZMZSqz9fx8','GsD9QQEKSzQ',
@@ -317,8 +344,8 @@
   ];
   const STORAGE_KEY = 'livegrid_v2';
   const CH_KEY      = 'livegrid_channel';
+  const PROXY       = 'https://api.allorigins.win/raw?url=';
 
-  /* ── データ ── */
   function defaultData() {
     return { tabs: [{ id: 1, name: 'タブ 1', videos: [...DEFAULT_VIDEOS] }], active: 0, next: 2 };
   }
@@ -327,10 +354,8 @@
     return defaultData();
   }
   function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-
   let state = load();
 
-  /* ── ユーティリティ ── */
   function extractId(url) {
     url = url.trim();
     const m = url.match(/youtu\.be\/([^?&]+)/) || url.match(/[?&]v=([^&]+)/) || url.match(/embed\/([^?&]+)/);
@@ -339,15 +364,42 @@
     return null;
   }
   function embedSrc(id) { return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`; }
+  function isChannel(v) { return typeof v === 'string' && v.startsWith('ch:'); }
+  function chId(v) { return v.slice(3); }
 
-  /* ── タブバー描画 ── */
+  /* RSS からチャンネルの最新動画IDを取得 */
+  async function fetchLatestId(channelId) {
+    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const res = await fetch(PROXY + encodeURIComponent(url));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const xml  = new DOMParser().parseFromString(text, 'application/xml');
+    const first = xml.querySelector('entry videoId');
+    if (!first) throw new Error('動画が見つかりません');
+    return first.textContent;
+  }
+
+  /* RSS から動画リストを取得 */
+  async function fetchVideoList(channelId) {
+    const url = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const res = await fetch(PROXY + encodeURIComponent(url));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const xml  = new DOMParser().parseFromString(text, 'application/xml');
+    return Array.from(xml.querySelectorAll('entry')).map(e => ({
+      id   : e.querySelector('videoId')?.textContent || '',
+      title: e.querySelector('title')?.textContent   || '',
+      pub  : e.querySelector('published')?.textContent || '',
+    })).filter(v => v.id);
+  }
+
+  /* ── タブバー ── */
   const tabbar   = document.getElementById('tabbar');
   const btnAdd   = document.getElementById('btn-add-tab');
   const gridWrap = document.getElementById('grid-wrap');
 
   function renderTabs() {
     tabbar.querySelectorAll('.tab').forEach(el => el.remove());
-
     state.tabs.forEach((tab, i) => {
       const div = document.createElement('div');
       div.className = 'tab' + (i === state.active ? ' active' : '');
@@ -363,15 +415,12 @@
       div.addEventListener('dblclick', (e) => {
         e.stopPropagation();
         nameEl.classList.add('editing');
-        nameEl.focus();
-        nameEl.select();
+        nameEl.focus(); nameEl.select();
       });
       nameEl.addEventListener('blur', () => {
         nameEl.classList.remove('editing');
         const v = nameEl.value.trim() || `タブ ${tab.id}`;
-        nameEl.value = v;
-        state.tabs[i].name = v;
-        save();
+        nameEl.value = v; state.tabs[i].name = v; save();
       });
       nameEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === 'Escape') nameEl.blur();
@@ -401,20 +450,43 @@
     save(); renderTabs(); renderGrid();
   });
 
-  /* ── グリッド描画 ── */
+  /* ── グリッド ── */
   function renderGrid() {
     gridWrap.innerHTML = '';
-    const tab = state.tabs[state.active];
+    const tab  = state.tabs[state.active];
     const grid = document.createElement('div');
     grid.className = 'grid';
 
-    tab.videos.forEach((id, ci) => {
+    tab.videos.forEach((val, ci) => {
       const cell = document.createElement('div');
       cell.className = 'cell';
 
-      if (id) {
+      if (isChannel(val)) {
+        /* チャンネルモード：最新動画を非同期取得 */
+        const loading = document.createElement('div');
+        loading.className = 'cell-loading';
+        loading.textContent = '最新動画を取得中…';
+        cell.appendChild(loading);
+
+        const label = document.createElement('div');
+        label.className = 'cell-label';
+        label.textContent = '⟳ 自動';
+        cell.appendChild(label);
+
+        fetchLatestId(chId(val)).then(videoId => {
+          loading.remove();
+          const iframe = document.createElement('iframe');
+          iframe.src = embedSrc(videoId);
+          iframe.allow = 'autoplay; encrypted-media';
+          iframe.allowFullscreen = true;
+          cell.insertBefore(iframe, label);
+        }).catch(err => {
+          loading.textContent = `取得失敗: ${err.message}`;
+        });
+
+      } else if (val) {
         const iframe = document.createElement('iframe');
-        iframe.src = embedSrc(id);
+        iframe.src = embedSrc(val);
         iframe.allow = 'autoplay; encrypted-media';
         iframe.allowFullscreen = true;
         cell.appendChild(iframe);
@@ -432,34 +504,84 @@
     gridWrap.appendChild(grid);
   }
 
-  /* ── URL 変更モーダル ── */
+  /* ── モーダル ── */
   const overlay  = document.getElementById('modal-overlay');
   const urlInput = document.getElementById('url-input');
+  const chInput  = document.getElementById('ch-id-input');
+  const paneUrl  = document.getElementById('pane-url');
+  const paneCh   = document.getElementById('pane-ch');
+  const videoList   = document.getElementById('video-list');
+  const fetchStatus = document.getElementById('fetch-status');
   let editingCell = null;
+  let currentMode = 'url';
+  let selectedVideoId = null;
+
+  /* モード切替 */
+  document.querySelectorAll('.mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentMode = btn.dataset.mode;
+      document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b === btn));
+      paneUrl.style.display = currentMode === 'url' ? '' : 'none';
+      paneCh.style.display  = currentMode === 'ch'  ? '' : 'none';
+    });
+  });
 
   function openModal(cellIndex) {
     editingCell = cellIndex;
-    const id = state.tabs[state.active].videos[cellIndex];
-    urlInput.value = id ? `https://www.youtube.com/watch?v=${id}` : '';
-    urlInput.style.borderColor = '';
+    const val = state.tabs[state.active].videos[cellIndex];
+    selectedVideoId = null;
+    videoList.querySelectorAll('.video-item').forEach(el => el.remove());
+    fetchStatus.style.display = 'block';
+    fetchStatus.textContent = 'チャンネルIDを入力して「取得」を押してください';
+
+    if (isChannel(val)) {
+      /* チャンネルモードのセル */
+      switchMode('ch');
+      chInput.value = chId(val);
+      const saved = localStorage.getItem(CH_KEY);
+      if (!chInput.value && saved) chInput.value = saved;
+    } else {
+      switchMode('url');
+      urlInput.value = val ? `https://www.youtube.com/watch?v=${val}` : '';
+      urlInput.style.borderColor = '';
+      const saved = localStorage.getItem(CH_KEY);
+      if (saved) chInput.value = saved;
+    }
+
     overlay.classList.add('open');
-    urlInput.focus();
-    urlInput.select();
-    // 前回のチャンネルIDを復元
-    const savedCh = localStorage.getItem(CH_KEY);
-    if (savedCh) document.getElementById('ch-id-input').value = savedCh;
+    if (currentMode === 'url') { urlInput.focus(); urlInput.select(); }
+    else chInput.focus();
   }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    paneUrl.style.display = mode === 'url' ? '' : 'none';
+    paneCh.style.display  = mode === 'ch'  ? '' : 'none';
+  }
+
   function closeModal() { overlay.classList.remove('open'); editingCell = null; }
 
   document.getElementById('btn-cancel').addEventListener('click', closeModal);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
 
   document.getElementById('btn-apply').addEventListener('click', () => {
-    const id = extractId(urlInput.value);
-    if (!id && urlInput.value.trim() !== '') {
-      urlInput.style.borderColor = '#f55'; urlInput.focus(); return;
+    if (currentMode === 'url') {
+      const id = extractId(urlInput.value);
+      if (!id && urlInput.value.trim() !== '') {
+        urlInput.style.borderColor = '#f55'; urlInput.focus(); return;
+      }
+      state.tabs[state.active].videos[editingCell] = id || '';
+    } else {
+      /* チャンネルモード：選択した動画IDを使う */
+      if (!selectedVideoId) {
+        fetchStatus.style.color = '#f55';
+        fetchStatus.textContent = '動画を1つ選択してください';
+        fetchStatus.style.display = 'block';
+        return;
+      }
+      state.tabs[state.active].videos[editingCell] = selectedVideoId;
     }
-    state.tabs[state.active].videos[editingCell] = id || '';
     save(); renderGrid(); closeModal();
   });
 
@@ -468,73 +590,55 @@
     if (e.key === 'Escape') closeModal();
   });
 
-  /* ── チャンネル最新動画取得 ── */
-  const videoList  = document.getElementById('video-list');
-  const fetchStatus = document.getElementById('fetch-status');
-  const chInput    = document.getElementById('ch-id-input');
-  const btnFetch   = document.getElementById('btn-fetch');
-
-  async function fetchChannelVideos(channelId) {
+  /* チャンネル動画リスト取得 */
+  document.getElementById('btn-fetch').addEventListener('click', async () => {
+    const id = chInput.value.trim();
+    if (!id) return;
+    localStorage.setItem(CH_KEY, id);
     fetchStatus.textContent = '取得中…';
+    fetchStatus.style.color = '#888';
     fetchStatus.style.display = 'block';
     videoList.querySelectorAll('.video-item').forEach(el => el.remove());
+    selectedVideoId = null;
 
-    const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
-
-    let xml;
     try {
-      const res = await fetch(proxyUrl);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const text = await res.text();
-      xml = new DOMParser().parseFromString(text, 'application/xml');
+      const videos = await fetchVideoList(id);
+      fetchStatus.style.display = 'none';
+      videos.forEach(v => {
+        const item = document.createElement('div');
+        item.className = 'video-item';
+        item.dataset.id = v.id;
+        const date = v.pub ? new Date(v.pub).toLocaleDateString('ja-JP') : '';
+        item.innerHTML = `
+          <img src="https://i.ytimg.com/vi/${v.id}/mqdefault.jpg" alt="">
+          <div class="video-item-info">
+            <div class="video-item-title" title="${v.title.replace(/"/g,'&quot;')}">${v.title}</div>
+            <div class="video-item-date">${date}</div>
+          </div>`;
+        item.addEventListener('click', () => {
+          videoList.querySelectorAll('.video-item').forEach(el => el.classList.remove('selected'));
+          item.classList.add('selected');
+          selectedVideoId = v.id;
+          urlInput.value = `https://www.youtube.com/watch?v=${v.id}`;
+        });
+        videoList.appendChild(item);
+      });
     } catch (e) {
       fetchStatus.textContent = `取得失敗: ${e.message}`;
-      return;
     }
-
-    const entries = Array.from(xml.querySelectorAll('entry'));
-    if (entries.length === 0) {
-      fetchStatus.textContent = '動画が見つかりませんでした';
-      return;
-    }
-
-    fetchStatus.style.display = 'none';
-
-    entries.forEach(entry => {
-      const videoId = entry.querySelector('videoId')?.textContent;
-      const title   = entry.querySelector('title')?.textContent || '(タイトルなし)';
-      const pub     = entry.querySelector('published')?.textContent;
-      if (!videoId) return;
-
-      const date = pub ? new Date(pub).toLocaleDateString('ja-JP') : '';
-
-      const item = document.createElement('div');
-      item.className = 'video-item';
-      item.innerHTML = `
-        <img src="https://i.ytimg.com/vi/${videoId}/mqdefault.jpg" alt="">
-        <div class="video-item-info">
-          <div class="video-item-title" title="${title.replace(/"/g,'&quot;')}">${title}</div>
-          <div class="video-item-date">${date}</div>
-        </div>
-      `;
-      item.addEventListener('click', () => {
-        urlInput.value = `https://www.youtube.com/watch?v=${videoId}`;
-        urlInput.style.borderColor = '';
-      });
-      videoList.appendChild(item);
-    });
-  }
-
-  btnFetch.addEventListener('click', () => {
-    const chId = chInput.value.trim();
-    if (!chId) return;
-    localStorage.setItem(CH_KEY, chId);
-    fetchChannelVideos(chId);
   });
 
   chInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') btnFetch.click();
+    if (e.key === 'Enter') document.getElementById('btn-fetch').click();
+  });
+
+  /* 「最新動画を自動再生にセット」ボタン */
+  document.getElementById('btn-set-ch').addEventListener('click', () => {
+    const id = chInput.value.trim();
+    if (!id) { chInput.focus(); return; }
+    localStorage.setItem(CH_KEY, id);
+    state.tabs[state.active].videos[editingCell] = `ch:${id}`;
+    save(); renderGrid(); closeModal();
   });
 
   /* ── 全画面 ── */
@@ -548,7 +652,6 @@
     btnFs.title = document.fullscreenElement ? '全画面を解除' : '全画面';
   });
 
-  /* ── 初期描画 ── */
   renderTabs();
   renderGrid();
 </script>
