@@ -3,50 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ライブカメラ一覧</title>
+  <title>LiveGrid</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body {
+    html, body {
+      height: 100%;
+      overflow: hidden;
       background: #0f0f0f;
       color: #fff;
       font-family: sans-serif;
-      height: 100vh;
-      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
 
-    header {
-      padding: 12px 20px;
+    /* ── タブバー ── */
+    #tabbar {
+      display: flex;
+      align-items: stretch;
       background: #1a1a1a;
       border-bottom: 1px solid #333;
+      height: 32px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+    #tabbar::-webkit-scrollbar { height: 3px; }
+    #tabbar::-webkit-scrollbar-thumb { background: #444; }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 0 8px 0 12px;
+      border-right: 1px solid #333;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 12px;
+      color: #888;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .tab:hover { background: #252525; color: #ccc; }
+    .tab.active { background: #0f0f0f; color: #fff; border-bottom: 2px solid #e00; }
+
+    .tab-name {
+      outline: none;
+      background: transparent;
+      border: none;
+      color: inherit;
+      font-size: 12px;
+      min-width: 20px;
+      max-width: 140px;
+      cursor: pointer;
+      pointer-events: none; /* 通常はクリック透過、ダブルクリックで有効化 */
+    }
+    .tab-name.editing {
+      pointer-events: auto;
+      cursor: text;
+      border-bottom: 1px solid #888;
+    }
+
+    .tab-close {
+      background: none;
+      border: none;
+      color: #555;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 1px 2px;
+      border-radius: 3px;
+    }
+    .tab-close:hover { color: #f44; background: #333; }
+
+    #btn-add-tab {
+      background: none;
+      border: none;
+      color: #777;
+      cursor: pointer;
       font-size: 18px;
-      font-weight: bold;
-      letter-spacing: 0.05em;
+      padding: 0 14px;
+      flex-shrink: 0;
+      align-self: center;
+    }
+    #btn-add-tab:hover { color: #fff; }
+
+    /* ── グリッド ── */
+    #grid-wrap {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
-      gap: 6px;
-      padding: 6px;
-      flex: 1;
-      min-height: 0;
+      grid-template-columns: repeat(3, auto);
+      gap: 5px;
+      padding: 5px;
+      height: 100%;
+      justify-content: start; /* 余白は右端へ */
     }
 
     .cell {
       position: relative;
       background: #111;
-      border-radius: 4px;
+      border-radius: 3px;
       overflow: hidden;
-      width: 100%;
-      height: 100%;
+      aspect-ratio: 16 / 9;
     }
 
     .cell iframe {
@@ -58,225 +122,253 @@
 
     .edit-btn {
       position: absolute;
-      top: 6px;
-      right: 6px;
-      background: rgba(0,0,0,0.6);
+      top: 5px;
+      right: 5px;
+      background: rgba(0,0,0,0.55);
       border: 1px solid #555;
       color: #fff;
-      border-radius: 4px;
-      padding: 3px 8px;
-      font-size: 12px;
+      border-radius: 3px;
+      padding: 2px 7px;
+      font-size: 11px;
       cursor: pointer;
       opacity: 0;
       transition: opacity 0.15s;
       z-index: 10;
     }
+    .cell:hover .edit-btn { opacity: 1; }
 
-    .cell:hover .edit-btn {
-      opacity: 1;
-    }
-
-    /* モーダル */
+    /* ── URL 変更モーダル ── */
     #modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 100;
+      background: rgba(0,0,0,0.65);
+      z-index: 200;
       align-items: center;
       justify-content: center;
     }
-
-    #modal-overlay.open {
-      display: flex;
-    }
+    #modal-overlay.open { display: flex; }
 
     #modal {
       background: #1e1e1e;
       border: 1px solid #444;
       border-radius: 8px;
-      padding: 24px;
+      padding: 22px;
       width: 420px;
-      max-width: 90vw;
+      max-width: 92vw;
     }
-
-    #modal h2 {
-      font-size: 15px;
-      margin-bottom: 14px;
-      color: #ccc;
-    }
-
+    #modal h2 { font-size: 13px; color: #bbb; margin-bottom: 12px; }
     #modal input {
       width: 100%;
       background: #111;
       border: 1px solid #555;
       color: #fff;
       border-radius: 4px;
-      padding: 8px 10px;
-      font-size: 14px;
+      padding: 7px 10px;
+      font-size: 13px;
       outline: none;
     }
-
-    #modal input:focus {
-      border-color: #888;
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 16px;
-    }
-
+    #modal input:focus { border-color: #999; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
     .modal-actions button {
-      padding: 7px 18px;
+      padding: 6px 16px;
       border-radius: 4px;
       border: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 12px;
     }
-
-    #btn-cancel {
-      background: #333;
-      color: #ccc;
-    }
-
-    #btn-apply {
-      background: #c00;
-      color: #fff;
-    }
-
-    #btn-apply:hover {
-      background: #e00;
-    }
+    #btn-cancel { background: #333; color: #bbb; }
+    #btn-apply  { background: #c00; color: #fff; }
+    #btn-apply:hover { background: #e00; }
   </style>
 </head>
 <body>
-  <header>📹 ライブカメラ一覧</header>
-  <div class="grid" id="grid"></div>
 
-  <div id="modal-overlay">
-    <div id="modal">
-      <h2>YouTube URL を変更</h2>
-      <input id="url-input" type="text" placeholder="https://www.youtube.com/watch?v=...">
-      <div class="modal-actions">
-        <button id="btn-cancel">キャンセル</button>
-        <button id="btn-apply">適用</button>
-      </div>
+<div id="tabbar">
+  <!-- タブは JS で生成 -->
+  <button id="btn-add-tab" title="タブを追加">＋</button>
+</div>
+
+<div id="grid-wrap"></div>
+
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>YouTube URL を変更</h2>
+    <input id="url-input" type="text" placeholder="https://www.youtube.com/watch?v=...">
+    <div class="modal-actions">
+      <button id="btn-cancel">キャンセル</button>
+      <button id="btn-apply">適用</button>
     </div>
   </div>
+</div>
 
-  <script>
-    const VIDEOS = [
-      '8H3nRCFVR6Y',
-      'gFRtAAmiFbE',
-      '68DhvzKCVOc',
-      'lA6TaaMGgDo',
-      'YZMZSqz9fx8',
-      'GsD9QQEKSzQ',
-      'i2PpmC1IeKk',
-      'OuCbntsMsWY',
-      'X5rq4ioggLk',
-    ];
+<script>
+  /* ── 定数 ── */
+  const DEFAULT_VIDEOS = [
+    '8H3nRCFVR6Y','gFRtAAmiFbE','68DhvzKCVOc',
+    'lA6TaaMGgDo','YZMZSqz9fx8','GsD9QQEKSzQ',
+    'i2PpmC1IeKk','OuCbntsMsWY','X5rq4ioggLk',
+  ];
+  const STORAGE_KEY = 'livegrid_v2';
 
-    const STORAGE_KEY = 'livecam_videos';
+  /* ── データ ── */
+  function defaultData() {
+    return { tabs: [{ id: 1, name: 'タブ 1', videos: [...DEFAULT_VIDEOS] }], active: 0, next: 2 };
+  }
+  function load() {
+    try { const s = localStorage.getItem(STORAGE_KEY); if (s) return JSON.parse(s); } catch {}
+    return defaultData();
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
-    function loadVideos() {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch {}
-      return [...VIDEOS];
-    }
+  let state = load();
 
-    function saveVideos(videos) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
-    }
+  /* ── ユーティリティ ── */
+  function extractId(url) {
+    url = url.trim();
+    const m = url.match(/youtu\.be\/([^?&]+)/) || url.match(/[?&]v=([^&]+)/) || url.match(/embed\/([^?&]+)/);
+    if (m) return m[1];
+    if (/^[\w-]{11}$/.test(url)) return url;
+    return null;
+  }
+  function embedSrc(id) { return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`; }
 
-    function extractId(url) {
-      url = url.trim();
-      // youtu.be/XXXX
-      const short = url.match(/youtu\.be\/([^?&]+)/);
-      if (short) return short[1];
-      // ?v=XXXX
-      const long = url.match(/[?&]v=([^&]+)/);
-      if (long) return long[1];
-      // embed/XXXX
-      const embed = url.match(/embed\/([^?&]+)/);
-      if (embed) return embed[1];
-      // そのままIDとして扱う（11文字英数字）
-      if (/^[\w-]{11}$/.test(url)) return url;
-      return null;
-    }
+  /* ── タブバー描画 ── */
+  const tabbar   = document.getElementById('tabbar');
+  const btnAdd   = document.getElementById('btn-add-tab');
+  const gridWrap = document.getElementById('grid-wrap');
 
-    function embedSrc(id) {
-      return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
-    }
+  function renderTabs() {
+    // 既存タブ要素を削除（btnAdd は残す）
+    tabbar.querySelectorAll('.tab').forEach(el => el.remove());
 
-    const grid = document.getElementById('grid');
-    const overlay = document.getElementById('modal-overlay');
-    const urlInput = document.getElementById('url-input');
-    let editingIndex = null;
-    let videos = loadVideos();
+    state.tabs.forEach((tab, i) => {
+      const div = document.createElement('div');
+      div.className = 'tab' + (i === state.active ? ' active' : '');
+      div.dataset.index = i;
 
-    function render() {
-      grid.innerHTML = '';
-      videos.forEach((id, i) => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
+      const nameEl = document.createElement('input');
+      nameEl.className = 'tab-name';
+      nameEl.type = 'text';
+      nameEl.value = tab.name;
+      nameEl.title = 'ダブルクリックで名前を変更';
 
+      /* タブ選択 */
+      div.addEventListener('click', () => {
+        if (state.active !== i) { state.active = i; save(); renderTabs(); renderGrid(); }
+      });
+
+      /* ダブルクリックで名前編集 */
+      nameEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        nameEl.classList.add('editing');
+        nameEl.focus();
+        nameEl.select();
+      });
+      nameEl.addEventListener('blur', () => {
+        nameEl.classList.remove('editing');
+        const v = nameEl.value.trim() || `タブ ${tab.id}`;
+        nameEl.value = v;
+        state.tabs[i].name = v;
+        save();
+      });
+      nameEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') nameEl.blur();
+        e.stopPropagation();
+      });
+
+      /* × ボタン */
+      const closeBtn = document.createElement('button');
+      closeBtn.className = 'tab-close';
+      closeBtn.textContent = '×';
+      closeBtn.title = 'タブを閉じる';
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (state.tabs.length === 1) return; // 最後の1つは削除不可
+        state.tabs.splice(i, 1);
+        if (state.active >= state.tabs.length) state.active = state.tabs.length - 1;
+        save(); renderTabs(); renderGrid();
+      });
+
+      div.appendChild(nameEl);
+      div.appendChild(closeBtn);
+      tabbar.insertBefore(div, btnAdd);
+    });
+  }
+
+  btnAdd.addEventListener('click', () => {
+    state.tabs.push({ id: state.next++, name: `タブ ${state.next - 1}`, videos: Array(9).fill('') });
+    state.active = state.tabs.length - 1;
+    save(); renderTabs(); renderGrid();
+  });
+
+  /* ── グリッド描画 ── */
+  function renderGrid() {
+    gridWrap.innerHTML = '';
+    const tab = state.tabs[state.active];
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+
+    tab.videos.forEach((id, ci) => {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+
+      if (id) {
         const iframe = document.createElement('iframe');
         iframe.src = embedSrc(id);
         iframe.allow = 'autoplay; encrypted-media';
         iframe.allowFullscreen = true;
-
-        const btn = document.createElement('button');
-        btn.className = 'edit-btn';
-        btn.textContent = '✎ 変更';
-        btn.addEventListener('click', () => openModal(i));
-
         cell.appendChild(iframe);
-        cell.appendChild(btn);
-        grid.appendChild(cell);
-      });
-    }
-
-    function openModal(index) {
-      editingIndex = index;
-      urlInput.value = `https://www.youtube.com/watch?v=${videos[index]}`;
-      overlay.classList.add('open');
-      urlInput.focus();
-      urlInput.select();
-    }
-
-    function closeModal() {
-      overlay.classList.remove('open');
-      editingIndex = null;
-    }
-
-    document.getElementById('btn-cancel').addEventListener('click', closeModal);
-    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
-
-    document.getElementById('btn-apply').addEventListener('click', () => {
-      const id = extractId(urlInput.value);
-      if (!id) {
-        urlInput.style.borderColor = '#f55';
-        urlInput.focus();
-        return;
       }
-      urlInput.style.borderColor = '';
-      videos[editingIndex] = id;
-      saveVideos(videos);
-      render();
-      closeModal();
+
+      const btn = document.createElement('button');
+      btn.className = 'edit-btn';
+      btn.textContent = '✎ 変更';
+      btn.addEventListener('click', () => openModal(ci));
+      cell.appendChild(btn);
+
+      grid.appendChild(cell);
     });
 
-    urlInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('btn-apply').click();
-      if (e.key === 'Escape') closeModal();
-    });
+    gridWrap.appendChild(grid);
+  }
 
-    render();
-  </script>
+  /* ── URL 変更モーダル ── */
+  const overlay  = document.getElementById('modal-overlay');
+  const urlInput = document.getElementById('url-input');
+  let editingCell = null;
+
+  function openModal(cellIndex) {
+    editingCell = cellIndex;
+    const id = state.tabs[state.active].videos[cellIndex];
+    urlInput.value = id ? `https://www.youtube.com/watch?v=${id}` : '';
+    urlInput.style.borderColor = '';
+    overlay.classList.add('open');
+    urlInput.focus();
+    urlInput.select();
+  }
+  function closeModal() { overlay.classList.remove('open'); editingCell = null; }
+
+  document.getElementById('btn-cancel').addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+  document.getElementById('btn-apply').addEventListener('click', () => {
+    const id = extractId(urlInput.value);
+    if (!id && urlInput.value.trim() !== '') {
+      urlInput.style.borderColor = '#f55'; urlInput.focus(); return;
+    }
+    state.tabs[state.active].videos[editingCell] = id || '';
+    save(); renderGrid(); closeModal();
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('btn-apply').click();
+    if (e.key === 'Escape') closeModal();
+  });
+
+  /* ── 初期描画 ── */
+  renderTabs();
+  renderGrid();
+</script>
 </body>
 </html>
