@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ライブカメラ一覧</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 12px 20px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      font-size: 18px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 6px;
+      flex: 1;
+    }
+
+    .cell {
+      position: relative;
+      background: #111;
+      border-radius: 4px;
+      overflow: hidden;
+      aspect-ratio: 16 / 9;
+    }
+
+    .cell iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>📹 ライブカメラ一覧</header>
+  <div class="grid">
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/8H3nRCFVR6Y?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/gFRtAAmiFbE?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/68DhvzKCVOc?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/lA6TaaMGgDo?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/YZMZSqz9fx8?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/GsD9QQEKSzQ?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/i2PpmC1IeKk?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/OuCbntsMsWY?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+    <div class="cell">
+      <iframe src="https://www.youtube.com/embed/X5rq4ioggLk?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
+</body>
+</html>
