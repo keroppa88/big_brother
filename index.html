@@ -88,6 +88,21 @@
     }
     #btn-add-tab:hover { color: #fff; }
 
+    #btn-fullscreen {
+      background: none;
+      border: none;
+      border-right: 1px solid #333;
+      color: #777;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 0 12px;
+      flex-shrink: 0;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+    }
+    #btn-fullscreen:hover { color: #fff; background: #252525; }
+
     /* ── グリッド ── */
     #grid-wrap {
       flex: 1;
@@ -185,6 +200,7 @@
 <body>
 
 <div id="tabbar">
+  <button id="btn-fullscreen" title="全画面">⛶</button>
   <!-- タブは JS で生成 -->
   <button id="btn-add-tab" title="タブを追加">＋</button>
 </div>
@@ -364,6 +380,20 @@
   urlInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') document.getElementById('btn-apply').click();
     if (e.key === 'Escape') closeModal();
+  });
+
+  /* ── 全画面 ── */
+  const btnFs = document.getElementById('btn-fullscreen');
+  btnFs.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    btnFs.textContent = document.fullscreenElement ? '✕' : '⛶';
+    btnFs.title = document.fullscreenElement ? '全画面を解除' : '全画面';
   });
 
   /* ── 初期描画 ── */
