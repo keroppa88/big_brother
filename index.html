@@ -217,6 +217,27 @@
     }
     .cell:hover .edit-btn { opacity: 1; }
 
+    .drag-handle {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid #555;
+      color: #aaa;
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-size: 13px;
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 10;
+      line-height: 1;
+    }
+    .cell:hover .drag-handle { opacity: 1; }
+    .cell.drag-over { outline: 2px solid #e00; }
+    .cell.dragging-src { opacity: 0.35; }
+    body.dragging .cell iframe { pointer-events: none; }
+
     /* ── モーダル ── */
     .overlay {
       display: none;
@@ -359,7 +380,8 @@
       <tr><td>タブ削除</td><td>タブの「×」ボタンで削除（最後の1つは削除不可）</td></tr>
       <tr><td>タブ名変更</td><td>タブをダブルクリックして編集、Enter で確定</td></tr>
       <tr><td class="section" colspan="2">── 各マスの設定 ──</td></tr>
-      <tr><td>マス変更</td><td>マスにカーソルを乗せると「✎ 変更」ボタンが表示される</td></tr>
+      <tr><td>マス移動</td><td>マスにカーソルを乗せると左上に「⠿」ハンドルが表示される。ドラッグして別のマスにドロップすると入れ替わる</td></tr>
+      <tr><td>マス変更</td><td>マスにカーソルを乗せると右上に「✎ 変更」ボタンが表示される</td></tr>
       <tr><td>URLを指定</td><td>YouTube の動画URLを直接入力して再生</td></tr>
       <tr><td>自動再生</td><td>「チャンネルの最新動画を自動再生」タブでチャンネルIDを入力し、「自動再生にセット」を押すと、ページを開くたびにそのチャンネルの最新動画を自動取得して再生</td></tr>
       <tr><td>チャンネルID</td><td>YouTubeチャンネルページのソースで <code>channelId</code> を検索すると確認できる（UC から始まる文字列）</td></tr>
@@ -516,6 +538,8 @@
   });
 
   /* ── グリッド ── */
+  let dragSrcIndex = null;
+
   function renderGrid() {
     gridWrap.innerHTML = '';
     const tab  = state.tabs[state.active];
@@ -525,6 +549,36 @@
     tab.videos.forEach((val, ci) => {
       const cell = document.createElement('div');
       cell.className = 'cell';
+      cell.draggable = true;
+
+      /* ドラッグ操作 */
+      cell.addEventListener('dragstart', (e) => {
+        dragSrcIndex = ci;
+        document.body.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => cell.classList.add('dragging-src'), 0);
+      });
+      cell.addEventListener('dragend', () => {
+        document.body.classList.remove('dragging');
+        cell.classList.remove('dragging-src');
+        grid.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      });
+      cell.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (ci !== dragSrcIndex) cell.classList.add('drag-over');
+      });
+      cell.addEventListener('dragleave', () => cell.classList.remove('drag-over'));
+      cell.addEventListener('drop', (e) => {
+        e.preventDefault();
+        cell.classList.remove('drag-over');
+        if (dragSrcIndex !== null && dragSrcIndex !== ci) {
+          const v = state.tabs[state.active].videos;
+          [v[dragSrcIndex], v[ci]] = [v[ci], v[dragSrcIndex]];
+          dragSrcIndex = null;
+          save(); renderGrid();
+        }
+      });
 
       if (isChannel(val)) {
         /* チャンネルモード：最新動画を非同期取得 */
@@ -557,9 +611,17 @@
         cell.appendChild(iframe);
       }
 
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle';
+      handle.textContent = '⠿';
+      handle.title = 'ドラッグして移動';
+      handle.addEventListener('mousedown', (e) => e.stopPropagation());
+      cell.appendChild(handle);
+
       const btn = document.createElement('button');
       btn.className = 'edit-btn';
       btn.textContent = '✎ 変更';
+      btn.addEventListener('mousedown', (e) => e.stopPropagation());
       btn.addEventListener('click', () => openModal(ci));
       cell.appendChild(btn);
 
