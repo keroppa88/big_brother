@@ -15,7 +15,8 @@
       background: #0f0f0f;
       color: #fff;
       font-family: sans-serif;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
@@ -32,9 +33,11 @@
     .grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
       gap: 6px;
       padding: 6px;
       flex: 1;
+      min-height: 0;
     }
 
     .cell {
@@ -42,7 +45,7 @@
       background: #111;
       border-radius: 4px;
       overflow: hidden;
-      aspect-ratio: 16 / 9;
+      min-height: 0;
     }
 
     .cell iframe {
