@@ -51,38 +51,228 @@
       border: none;
       display: block;
     }
+
+    .edit-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 10;
+    }
+
+    .cell:hover .edit-btn {
+      opacity: 1;
+    }
+
+    /* モーダル */
+    #modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #modal-overlay.open {
+      display: flex;
+    }
+
+    #modal {
+      background: #1e1e1e;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 24px;
+      width: 420px;
+      max-width: 90vw;
+    }
+
+    #modal h2 {
+      font-size: 15px;
+      margin-bottom: 14px;
+      color: #ccc;
+    }
+
+    #modal input {
+      width: 100%;
+      background: #111;
+      border: 1px solid #555;
+      color: #fff;
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    #modal input:focus {
+      border-color: #888;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .modal-actions button {
+      padding: 7px 18px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
+    #btn-cancel {
+      background: #333;
+      color: #ccc;
+    }
+
+    #btn-apply {
+      background: #c00;
+      color: #fff;
+    }
+
+    #btn-apply:hover {
+      background: #e00;
+    }
   </style>
 </head>
 <body>
   <header>📹 ライブカメラ一覧</header>
-  <div class="grid">
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/8H3nRCFVR6Y?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/gFRtAAmiFbE?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/68DhvzKCVOc?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/lA6TaaMGgDo?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/YZMZSqz9fx8?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/GsD9QQEKSzQ?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/i2PpmC1IeKk?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/OuCbntsMsWY?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-    </div>
-    <div class="cell">
-      <iframe src="https://www.youtube.com/embed/X5rq4ioggLk?autoplay=1&mute=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+  <div class="grid" id="grid"></div>
+
+  <div id="modal-overlay">
+    <div id="modal">
+      <h2>YouTube URL を変更</h2>
+      <input id="url-input" type="text" placeholder="https://www.youtube.com/watch?v=...">
+      <div class="modal-actions">
+        <button id="btn-cancel">キャンセル</button>
+        <button id="btn-apply">適用</button>
+      </div>
     </div>
   </div>
+
+  <script>
+    const VIDEOS = [
+      '8H3nRCFVR6Y',
+      'gFRtAAmiFbE',
+      '68DhvzKCVOc',
+      'lA6TaaMGgDo',
+      'YZMZSqz9fx8',
+      'GsD9QQEKSzQ',
+      'i2PpmC1IeKk',
+      'OuCbntsMsWY',
+      'X5rq4ioggLk',
+    ];
+
+    const STORAGE_KEY = 'livecam_videos';
+
+    function loadVideos() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch {}
+      return [...VIDEOS];
+    }
+
+    function saveVideos(videos) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(videos));
+    }
+
+    function extractId(url) {
+      url = url.trim();
+      // youtu.be/XXXX
+      const short = url.match(/youtu\.be\/([^?&]+)/);
+      if (short) return short[1];
+      // ?v=XXXX
+      const long = url.match(/[?&]v=([^&]+)/);
+      if (long) return long[1];
+      // embed/XXXX
+      const embed = url.match(/embed\/([^?&]+)/);
+      if (embed) return embed[1];
+      // そのままIDとして扱う（11文字英数字）
+      if (/^[\w-]{11}$/.test(url)) return url;
+      return null;
+    }
+
+    function embedSrc(id) {
+      return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+    }
+
+    const grid = document.getElementById('grid');
+    const overlay = document.getElementById('modal-overlay');
+    const urlInput = document.getElementById('url-input');
+    let editingIndex = null;
+    let videos = loadVideos();
+
+    function render() {
+      grid.innerHTML = '';
+      videos.forEach((id, i) => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+
+        const iframe = document.createElement('iframe');
+        iframe.src = embedSrc(id);
+        iframe.allow = 'autoplay; encrypted-media';
+        iframe.allowFullscreen = true;
+
+        const btn = document.createElement('button');
+        btn.className = 'edit-btn';
+        btn.textContent = '✎ 変更';
+        btn.addEventListener('click', () => openModal(i));
+
+        cell.appendChild(iframe);
+        cell.appendChild(btn);
+        grid.appendChild(cell);
+      });
+    }
+
+    function openModal(index) {
+      editingIndex = index;
+      urlInput.value = `https://www.youtube.com/watch?v=${videos[index]}`;
+      overlay.classList.add('open');
+      urlInput.focus();
+      urlInput.select();
+    }
+
+    function closeModal() {
+      overlay.classList.remove('open');
+      editingIndex = null;
+    }
+
+    document.getElementById('btn-cancel').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    document.getElementById('btn-apply').addEventListener('click', () => {
+      const id = extractId(urlInput.value);
+      if (!id) {
+        urlInput.style.borderColor = '#f55';
+        urlInput.focus();
+        return;
+      }
+      urlInput.style.borderColor = '';
+      videos[editingIndex] = id;
+      saveVideos(videos);
+      render();
+      closeModal();
+    });
+
+    urlInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('btn-apply').click();
+      if (e.key === 'Escape') closeModal();
+    });
+
+    render();
+  </script>
 </body>
 </html>
