@@ -437,7 +437,8 @@
   ];
   const STORAGE_KEY = 'livegrid_v2';
   const CH_KEY      = 'livegrid_channel';
-  const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  const RSS2JSON  = 'https://api.rss2json.com/v1/api.json?rss_url=';
+  const CORSPROXY = 'https://corsproxy.io/?';
 
   function defaultData() {
     return { tabs: [{ id: 1, name: 'タブ 1', videos: [...DEFAULT_VIDEOS] }], active: 0, next: 2 };
@@ -460,17 +461,34 @@
   function isChannel(v) { return typeof v === 'string' && v.startsWith('ch:'); }
   function chId(v) { return v.slice(3); }
 
-  /* rss2json 経由でチャンネルの動画リストを取得 */
+  /* チャンネルの動画リストを取得（rss2json → corsproxy フォールバック） */
   async function fetchVideoList(channelId) {
     const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const res = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    if (json.status !== 'ok') throw new Error(json.message || '取得失敗');
-    return json.items.map(item => {
-      const m = item.link.match(/[?&]v=([\w-]{11})/);
-      return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
-    }).filter(v => v.id);
+
+    // まず rss2json を試す
+    try {
+      const r = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
+      if (r.ok) {
+        const json = await r.json();
+        if (json.status === 'ok') {
+          return json.items.map(item => {
+            const m = item.link.match(/[?&]v=([\w-]{11})/);
+            return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
+          }).filter(v => v.id);
+        }
+      }
+    } catch {}
+
+    // フォールバック: corsproxy.io + XML パース
+    const r2 = await fetch(CORSPROXY + encodeURIComponent(rssUrl));
+    if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
+    const text = await r2.text();
+    const xml  = new DOMParser().parseFromString(text, 'application/xml');
+    return Array.from(xml.querySelectorAll('entry')).map(e => ({
+      id   : e.querySelector('videoId')?.textContent || '',
+      title: e.querySelector('title')?.textContent   || '',
+      pub  : e.querySelector('published')?.textContent || '',
+    })).filter(v => v.id);
   }
 
   /* 最新動画ID1件だけ取得 */
