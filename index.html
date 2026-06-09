@@ -462,70 +462,63 @@
 
   /* XML テキストをパースして動画リストに変換 */
   function parseRssXml(text) {
+    if (!text || (!text.includes('<entry') )) return [];
     const xml = new DOMParser().parseFromString(text, 'application/xml');
-    return Array.from(xml.querySelectorAll('entry')).map(e => ({
-      id   : e.querySelector('videoId')?.textContent || '',
-      title: e.querySelector('title')?.textContent   || '',
-      pub  : e.querySelector('published')?.textContent || '',
-    })).filter(v => v.id);
+    return Array.from(xml.querySelectorAll('entry')).map(e => {
+      const vidEl = e.querySelector('videoId')
+        || e.getElementsByTagNameNS('http://www.youtube.com/xml/schemas/2015', 'videoId')[0];
+      const id = vidEl?.textContent?.trim() || '';
+      const href = e.querySelector('link')?.getAttribute('href') || '';
+      const mHref = href.match(/[?&]v=([\w-]{11})/);
+      return {
+        id   : id || (mHref ? mHref[1] : ''),
+        title: e.querySelector('title')?.textContent || '',
+        pub  : e.querySelector('published')?.textContent || '',
+      };
+    }).filter(v => v.id);
   }
 
-  /* チャンネルの動画リストを取得（複数プロキシを順番に試す） */
+  /* セッションキャッシュ（チャンネルID → 動画リスト） */
+  const _cache = {};
+
+  /* チャンネルの動画リストを取得（キャッシュ付き・最大2プロキシ） */
   async function fetchVideoList(channelId) {
+    if (_cache[channelId]) return _cache[channelId];
+
     const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
     const errors = [];
 
-    // 1. rss2json (JSON形式)
-    try {
-      const r = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
-      if (r.ok) {
-        const json = await r.json();
-        if (json.status === 'ok' && json.items?.length) {
-          return json.items.map(item => {
-            const m = item.link.match(/[?&]v=([\w-]{11})/);
-            return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
-          }).filter(v => v.id);
-        }
-      }
-      errors.push('rss2json: ' + (r.status));
-    } catch(e) { errors.push('rss2json: ' + e.message); }
-
-    // 2. allorigins (JSON の .contents フィールドにXML)
+    // 1. allorigins（JSON ラッパー）
     try {
       const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl));
       if (r.ok) {
         const json = await r.json();
         if (json.contents) {
           const list = parseRssXml(json.contents);
-          if (list.length) return list;
-        }
-      }
-      errors.push('allorigins: ' + (r.status));
+          if (list.length) { _cache[channelId] = list; return list; }
+          errors.push('allorigins: 0件 inner=' + json.status?.http_code
+            + ' preview=' + json.contents.slice(0, 80).replace(/\n/g,' '));
+        } else { errors.push('allorigins: contentsなし'); }
+      } else { errors.push('allorigins: HTTP' + r.status); }
     } catch(e) { errors.push('allorigins: ' + e.message); }
 
-    // 3. corsproxy.io (raw)
+    // 2. rss2json（JSON形式）
     try {
-      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(rssUrl));
+      const r = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
       if (r.ok) {
-        const text = await r.text();
-        const list = parseRssXml(text);
-        if (list.length) return list;
-      }
-      errors.push('corsproxy: ' + (r.status));
-    } catch(e) { errors.push('corsproxy: ' + e.message); }
+        const json = await r.json();
+        if (json.status === 'ok' && json.items?.length) {
+          const list = json.items.map(item => {
+            const m = item.link.match(/[?&]v=([\w-]{11})/);
+            return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
+          }).filter(v => v.id);
+          if (list.length) { _cache[channelId] = list; return list; }
+        }
+        errors.push('rss2json: status=' + json.status);
+      } else { errors.push('rss2json: HTTP' + r.status); }
+    } catch(e) { errors.push('rss2json: ' + e.message); }
 
-    // 4. codetabs (raw)
-    try {
-      const r = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(rssUrl));
-      if (r.ok) {
-        const text = await r.text();
-        const list = parseRssXml(text);
-        if (list.length) return list;
-      }
-      errors.push('codetabs: ' + (r.status));
-    } catch(e) { errors.push('codetabs: ' + e.message); }
-
-    throw new Error('全プロキシ失敗: ' + errors.join(' / '));
+    throw new Error(errors.join(' / '));
   }
 
   /* 最新動画ID1件だけ取得 */
