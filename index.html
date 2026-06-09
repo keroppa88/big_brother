@@ -438,7 +438,6 @@
   const STORAGE_KEY = 'livegrid_v2';
   const CH_KEY      = 'livegrid_channel';
   const RSS2JSON  = 'https://api.rss2json.com/v1/api.json?rss_url=';
-  const CORSPROXY = 'https://corsproxy.io/?';
 
   function defaultData() {
     return { tabs: [{ id: 1, name: 'タブ 1', videos: [...DEFAULT_VIDEOS] }], active: 0, next: 2 };
@@ -461,34 +460,72 @@
   function isChannel(v) { return typeof v === 'string' && v.startsWith('ch:'); }
   function chId(v) { return v.slice(3); }
 
-  /* チャンネルの動画リストを取得（rss2json → corsproxy フォールバック） */
+  /* XML テキストをパースして動画リストに変換 */
+  function parseRssXml(text) {
+    const xml = new DOMParser().parseFromString(text, 'application/xml');
+    return Array.from(xml.querySelectorAll('entry')).map(e => ({
+      id   : e.querySelector('videoId')?.textContent || '',
+      title: e.querySelector('title')?.textContent   || '',
+      pub  : e.querySelector('published')?.textContent || '',
+    })).filter(v => v.id);
+  }
+
+  /* チャンネルの動画リストを取得（複数プロキシを順番に試す） */
   async function fetchVideoList(channelId) {
     const rssUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const errors = [];
 
-    // まず rss2json を試す
+    // 1. rss2json (JSON形式)
     try {
       const r = await fetch(RSS2JSON + encodeURIComponent(rssUrl));
       if (r.ok) {
         const json = await r.json();
-        if (json.status === 'ok') {
+        if (json.status === 'ok' && json.items?.length) {
           return json.items.map(item => {
             const m = item.link.match(/[?&]v=([\w-]{11})/);
             return { id: m ? m[1] : '', title: item.title, pub: item.pubDate };
           }).filter(v => v.id);
         }
       }
-    } catch {}
+      errors.push('rss2json: ' + (r.status));
+    } catch(e) { errors.push('rss2json: ' + e.message); }
 
-    // フォールバック: corsproxy.io + XML パース
-    const r2 = await fetch(CORSPROXY + encodeURIComponent(rssUrl));
-    if (!r2.ok) throw new Error(`HTTP ${r2.status}`);
-    const text = await r2.text();
-    const xml  = new DOMParser().parseFromString(text, 'application/xml');
-    return Array.from(xml.querySelectorAll('entry')).map(e => ({
-      id   : e.querySelector('videoId')?.textContent || '',
-      title: e.querySelector('title')?.textContent   || '',
-      pub  : e.querySelector('published')?.textContent || '',
-    })).filter(v => v.id);
+    // 2. allorigins (JSON の .contents フィールドにXML)
+    try {
+      const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(rssUrl));
+      if (r.ok) {
+        const json = await r.json();
+        if (json.contents) {
+          const list = parseRssXml(json.contents);
+          if (list.length) return list;
+        }
+      }
+      errors.push('allorigins: ' + (r.status));
+    } catch(e) { errors.push('allorigins: ' + e.message); }
+
+    // 3. corsproxy.io (raw)
+    try {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent(rssUrl));
+      if (r.ok) {
+        const text = await r.text();
+        const list = parseRssXml(text);
+        if (list.length) return list;
+      }
+      errors.push('corsproxy: ' + (r.status));
+    } catch(e) { errors.push('corsproxy: ' + e.message); }
+
+    // 4. codetabs (raw)
+    try {
+      const r = await fetch('https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(rssUrl));
+      if (r.ok) {
+        const text = await r.text();
+        const list = parseRssXml(text);
+        if (list.length) return list;
+      }
+      errors.push('codetabs: ' + (r.status));
+    } catch(e) { errors.push('codetabs: ' + e.message); }
+
+    throw new Error('全プロキシ失敗: ' + errors.join(' / '));
   }
 
   /* 最新動画ID1件だけ取得 */
